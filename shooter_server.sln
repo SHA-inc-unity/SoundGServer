@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34309.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "televibe_server", "televibe_server.csproj", "{50F33CE8-AB22-47A4-A37B-EB553FC5C035}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{50F33CE8-AB22-47A4-A37B-EB553FC5C035}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50F33CE8-AB22-47A4-A37B-EB553FC5C035}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50F33CE8-AB22-47A4-A37B-EB553FC5C035}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50F33CE8-AB22-47A4-A37B-EB553FC5C035}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {95D44469-143A-4C38-8223-0613AB048779}
+	EndGlobalSection
+EndGlobal

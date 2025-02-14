@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление сервером</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #status {
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #logs {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Управление сервером</h1>
+    <div id="status">Статус сервера: {{ server_status }}</div>
+    <button onclick="turnOn()">Включить</button>
+    <button onclick="turnOff()">Выключить</button>
+    <p>Логирование:</p>
+    <div id="logs"></div>
+
+    <script>
+        function updateStatus(status) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = `Статус сервера: ${status}`;
+            statusElement.style.backgroundColor = (status === 'Активен' || status === 'Включено') ? 'green' : 'red';
+        }
+
+        function turnOn() {
+            fetch('/turn_on')
+                .then(response => response.text())
+                .then(data => {
+                    updateStatus(data);
+                    alert(data);
+                });
+        }
+
+        function turnOff() {
+            fetch('/turn_off')
+                .then(response => response.text())
+                .then(data => {
+                    updateStatus(data);
+                    alert(data);
+                });
+        }
+
+        function updateLogs() {
+            fetch('/get_logs')
+                .then(response => response.text())
+                .then(data => {
+                    const logsElement = document.getElementById('logs');
+                    logsElement.innerHTML = data.replace(/\n/g, '<br>');
+                });
+        }
+
+
+        function getStatus() {
+            fetch('/get_status')
+                .then(response => response.text())
+                .then(data => updateStatus(data));
+        }
+
+        // Update logs every 2 seconds
+        setInterval(updateLogs, 500);
+
+        updateLogs();
+
+        // Проверяем статус при загрузке страницы
+        getStatus();
+    </script>
+</body>
+</html>
