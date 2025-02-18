@@ -58,7 +58,7 @@ def pull_and_restart():
         start_server()
 
 def run_flask():
-    run_simple("0.0.0.0", 5500, app, use_reloader=False)
+    run_simple("0.0.0.0", 5401, app, use_reloader=False)
 
 @app.route('/')
 def index():
