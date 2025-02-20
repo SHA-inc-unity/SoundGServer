@@ -69,6 +69,10 @@ namespace shooter_server
                             //OK
                             await Task.Run(() => Register(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("GetTopSongs"):
+                            //OK
+                            await Task.Run(() => GetTopSongs(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
                         default:
                             Console.WriteLine("Command not found");
                             break;
@@ -174,6 +178,81 @@ namespace shooter_server
             catch (Exception e)
             {
                 Console.WriteLine($"Error in Register command: {e}");
+            }
+        }
+
+
+        private async Task GetTopSongs(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                // Разбираем входные данные
+                List<string> credentials = new List<string>(sqlCommand.Split(' '));
+                credentials.RemoveAt(0); // Убираем "GetTopSongs"
+
+                int requestId = int.Parse(credentials[0]);
+                string login = credentials[1];
+                string hashedPassword = credentials[2];
+
+                // Проверяем логин и пароль
+                string userQuery = @"
+            SELECT UserName 
+            FROM UserTable 
+            WHERE UserName = @login AND Password = @password";
+
+                using (var userCmd = dbConnection.CreateCommand())
+                {
+                    userCmd.CommandText = userQuery;
+                    userCmd.Parameters.AddWithValue("login", login);
+                    userCmd.Parameters.AddWithValue("password", hashedPassword);
+
+                    using (var reader = await userCmd.ExecuteReaderAsync())
+                    {
+                        if (!reader.Read())
+                        {
+                            string result = "false Invalid login or password";
+                            lobby.SendMessagePlayer(result, ws, requestId);
+                            return;
+                        }
+                    }
+                }
+
+                // Получаем топ-100 песен по BuyCount, а также проверяем их статус для пользователя
+                string topSongsQuery = @"
+            SELECT s.SongName, s.Price, s.BuyCount, 
+                   COALESCE(ut.OwnType, 'load') AS OwnType
+            FROM Songs s
+            LEFT JOIN UserToSong ut ON s.SongName = ut.SongName AND ut.UserName = @login
+            ORDER BY s.BuyCount DESC
+            LIMIT 100";
+
+                List<string> topSongs = new List<string>();
+
+                using (var topSongCmd = dbConnection.CreateCommand())
+                {
+                    topSongCmd.CommandText = topSongsQuery;
+                    topSongCmd.Parameters.AddWithValue("login", login);
+
+                    using (var topSongReader = await topSongCmd.ExecuteReaderAsync())
+                    {
+                        while (topSongReader.Read())
+                        {
+                            string songName = topSongReader.GetString(0);
+                            int price = topSongReader.GetInt32(1);
+                            int buyCount = topSongReader.GetInt32(2);
+                            string ownType = topSongReader.GetString(3); // buyed, owner, или load
+                            topSongs.Add($"{songName}_{price}_{buyCount}_{ownType}");
+                        }
+                    }
+                }
+
+                // Формируем итоговый список
+                string finalResult = $"true {string.Join(" ", topSongs)}";
+                lobby.SendMessagePlayer(finalResult, ws, requestId);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error in GetTopSongs command: {e}");
             }
         }
 
