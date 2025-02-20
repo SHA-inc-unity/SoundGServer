@@ -17,7 +17,7 @@ namespace shooter_server
                 "localhost",
                 "postgres",
                 "postgres",
-                "teletypedb",
+                "DJArbuzDB",
                 5432
             );
 
