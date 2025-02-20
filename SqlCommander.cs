@@ -132,60 +132,51 @@ namespace shooter_server
             }
         }
 
-
         private async Task Register(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
         {
             try
             {
-                Console.WriteLine($"R AA");
-                // SendMessage requestId login password
+                // Разбираем команду
                 List<string> credentials = new List<string>(sqlCommand.Split(' '));
-
-                credentials.RemoveAt(0);
+                credentials.RemoveAt(0); // Убираем "Register"
 
                 int requestId = int.Parse(credentials[0]);
-                byte[] login = Convert.FromBase64String(credentials[1]);
-                byte[] password = Convert.FromBase64String(credentials[2]);
+                string login = credentials[1];
+                string email = credentials[2];
+                string hashedPassword = credentials[3];
 
-                Console.WriteLine($"R A");
-
-                // Check if the login already exists
-                using (var checkCmd = dbConnection.CreateCommand())
+                using (var cursor = dbConnection.CreateCommand())
                 {
-                    checkCmd.CommandText = "SELECT COUNT(*) FROM Anon WHERE Login = @login";
-                    checkCmd.Parameters.AddWithValue("login", login);
+                    cursor.CommandText = @"
+                INSERT INTO UserTable (UserName, Password, EmailAddress) 
+                VALUES (@login, @password, @email)";
 
-                    int count = Convert.ToInt32(await checkCmd.ExecuteScalarAsync());
+                    cursor.Parameters.AddWithValue("login", login);
+                    cursor.Parameters.AddWithValue("password", hashedPassword);
+                    cursor.Parameters.AddWithValue("email", email);
 
-                    Console.WriteLine($"R B");
-
-                    if (count > 0)
+                    try
                     {
-                        // Login already exists
-                        lobby.SendMessagePlayer($"User with this login already exists", ws, requestId);
+                        await cursor.ExecuteNonQueryAsync();
+
+                        // Успешная регистрация
+                        string result = "true Registration successful";
+                        lobby.SendMessagePlayer(result, ws, requestId);
                     }
-                    else
+                    catch (PostgresException ex) when (ex.SqlState == "23505") // Код ошибки уникальности
                     {
-                        // Insert new record
-                        using (var insertCmd = dbConnection.CreateCommand())
-                        {
-                            insertCmd.CommandText = "INSERT INTO Anon (Login, Password) VALUES (@login, @password)";
-                            insertCmd.Parameters.AddWithValue("login", login);
-                            insertCmd.Parameters.AddWithValue("password", password);
-
-                            await insertCmd.ExecuteNonQueryAsync();
-
-                            // Registration successful
-                            lobby.SendMessagePlayer($"true", ws, requestId);
-                        }
+                        // Логин или email уже существуют
+                        string result = "false UserName or Email already exists";
+                        lobby.SendMessagePlayer(result, ws, requestId);
                     }
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error SendMessage command: {e}");
+                Console.WriteLine($"Error in Register command: {e}");
             }
         }
+
 
     }
 }
