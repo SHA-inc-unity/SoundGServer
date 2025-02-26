@@ -273,7 +273,7 @@ namespace shooter_server
             try
             {
                 // Разбираем команду
-                List<string> parts = new List<string>(sqlCommand.Split('|'));
+                List<string> parts = new List<string>(sqlCommand.Split(' '));
                 parts.RemoveAt(0); // Убираем "SaveSong"
 
                 int requestId = int.Parse(parts[0]);
