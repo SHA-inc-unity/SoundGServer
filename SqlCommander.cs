@@ -280,44 +280,51 @@ namespace shooter_server
                 int requestId = int.Parse(parts[0]);
                 string username = parts[1];
                 string hashedPassword = parts[2];
-                int totalParts = int.Parse(parts[3]);
+                string songname = parts[3];
                 string muzPackPreview = string.Join(" ", parts.Skip(4));
 
                 using (var cursor = dbConnection.CreateCommand())
                 {
+                    // Проверяем пользователя
                     cursor.CommandText = @"
-            SELECT UserId FROM UserTable 
+            SELECT UserName FROM UserTable 
             WHERE UserName = @username AND Password = @password";
 
                     cursor.Parameters.AddWithValue("username", username);
                     cursor.Parameters.AddWithValue("password", hashedPassword);
 
-                    int? userId = null;
                     using (var reader = await cursor.ExecuteReaderAsync())
                     {
-                        if (reader.Read())
+                        if (!reader.Read())
                         {
-                            userId = reader.GetInt32(0);
+                            lobby.SendMessagePlayer("false Invalid credentials", ws, requestId);
+                            return;
                         }
                     }
 
-                    if (userId == null)
-                    {
-                        lobby.SendMessagePlayer("false Invalid credentials", ws, requestId);
-                        return;
-                    }
+                    // Сохраняем песню в таблицу songs
+                    string filePath = $"uploads/{songname}.zip";
 
                     cursor.CommandText = @"
-            INSERT INTO SongTable (UserId, MuzPackPreview, TotalParts, UploadedParts) 
-            VALUES (@userId, @muzPackPreview, @totalParts, 0)
-            RETURNING SongId;";
+            INSERT INTO songs (songname, linktosong, price, buycount, preview) 
+            VALUES (@songname, @linktosong, 0, 0, @preview)
+            ON CONFLICT (songname) DO NOTHING;";
 
-                    cursor.Parameters.AddWithValue("userId", userId);
-                    cursor.Parameters.AddWithValue("muzPackPreview", muzPackPreview);
-                    cursor.Parameters.AddWithValue("totalParts", totalParts);
+                    cursor.Parameters.AddWithValue("songname", songname);
+                    cursor.Parameters.AddWithValue("linktosong", filePath);
+                    cursor.Parameters.AddWithValue("preview", muzPackPreview);
 
-                    int songId = (int)await cursor.ExecuteScalarAsync();
-                    lobby.SendMessagePlayer($"true {songId}", ws, requestId);
+                    await cursor.ExecuteNonQueryAsync();
+
+                    // Связываем пользователя с песней
+                    cursor.CommandText = @"
+            INSERT INTO usertosong (username, songname, owntype, userscore) 
+            VALUES (@username, @songname, 'owner', 0)
+            ON CONFLICT DO NOTHING;";
+
+                    await cursor.ExecuteNonQueryAsync();
+
+                    lobby.SendMessagePlayer($"true {songname}", ws, requestId);
                 }
             }
             catch (Exception e)
@@ -326,59 +333,55 @@ namespace shooter_server
             }
         }
 
-        private async Task UploadSongPart(string sqlCommand, byte[] data, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        private async Task UploadSongPart(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
         {
             try
             {
-                using (var cursor = dbConnection.CreateCommand())
+                List<string> parts = new List<string>(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "UploadSongPart"
+
+                int requestId = int.Parse(parts[0]); // ID запроса
+                int partNumber = int.Parse(parts[1]); // Номер части
+                int totalParts = int.Parse(parts[2]); // Всего частей
+                string encodedData = parts[3]; // Закодированные данные файла (base64 или hex)
+
+                // Декодируем данные
+                byte[] fileChunk = Convert.FromBase64String(encodedData); // Используйте Convert.FromHexString(), если hex
+
+                string songname = $"song_{senderId}"; // Уникальное имя файла
+                string tempFilePath = $"uploads/{songname}.part";
+
+                // Записываем часть в файл
+                await File.AppendAllBytesAsync(tempFilePath, fileChunk);
+
+                if (partNumber == totalParts - 1) // Если это последняя часть
                 {
-                    int requestId = BitConverter.ToInt32(data, 0);
-                    int songId = BitConverter.ToInt32(data, 4);
-                    int partNumber = BitConverter.ToInt32(data, 8);
-                    int totalParts = BitConverter.ToInt32(data, 12);
-                    byte[] fileChunk = new byte[data.Length - 16];
-                    Buffer.BlockCopy(data, 16, fileChunk, 0, fileChunk.Length);
+                    string finalFilePath = $"uploads/{songname}.zip";
 
-                    // Проверяем существование песни
-                    cursor.CommandText = @"
-            SELECT UploadedParts, TotalParts FROM SongTable 
-            WHERE SongId = @songId";
-                    cursor.Parameters.AddWithValue("songId", songId);
-
-                    int uploadedParts = 0;
-                    int storedTotalParts = 0;
-                    using (var reader = await cursor.ExecuteReaderAsync())
+                    if (File.Exists(finalFilePath))
                     {
-                        if (reader.Read())
-                        {
-                            uploadedParts = reader.GetInt32(0);
-                            storedTotalParts = reader.GetInt32(1);
-                        }
-                        else
-                        {
-                            lobby.SendMessagePlayer("false Invalid song ID", ws, requestId);
-                            return;
-                        }
+                        File.Delete(finalFilePath);
+                    }
+                    File.Move(tempFilePath, finalFilePath);
+
+                    // Обновляем путь в БД
+                    using (var cursor = dbConnection.CreateCommand())
+                    {
+                        cursor.CommandText = @"
+                UPDATE songs 
+                SET linktosong = @linktosong 
+                WHERE songname = @songname;";
+
+                        cursor.Parameters.AddWithValue("linktosong", finalFilePath);
+                        cursor.Parameters.AddWithValue("songname", songname);
+
+                        await cursor.ExecuteNonQueryAsync();
                     }
 
-                    if (totalParts != storedTotalParts)
-                    {
-                        lobby.SendMessagePlayer("false Part count mismatch", ws, requestId);
-                        return;
-                    }
-
-                    // Сохраняем часть файла
-                    string filePath = Path.Combine("uploads", $"{songId}_{partNumber}.part");
-                    await File.WriteAllBytesAsync(filePath, fileChunk);
-
-                    // Обновляем количество загруженных частей
-                    cursor.CommandText = @"
-            UPDATE SongTable 
-            SET UploadedParts = UploadedParts + 1 
-            WHERE SongId = @songId";
-                    cursor.Parameters.AddWithValue("songId", songId);
-                    await cursor.ExecuteNonQueryAsync();
-
+                    lobby.SendMessagePlayer($"true {partNumber}", ws, requestId);
+                }
+                else
+                {
                     lobby.SendMessagePlayer($"true {partNumber}", ws, requestId);
                 }
             }
@@ -387,6 +390,8 @@ namespace shooter_server
                 Console.WriteLine($"Error in UploadSongPart command: {e}");
             }
         }
+
+
 
     }
 }
