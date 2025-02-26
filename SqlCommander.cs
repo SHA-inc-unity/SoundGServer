@@ -279,6 +279,7 @@ namespace shooter_server
                 int requestId = int.Parse(parts[0]);
                 string username = parts[1];
                 string hashedPassword = parts[2];
+                Console.WriteLine(parts[3]);
                 int partsCount = int.Parse(parts[3]);
                 string songname = parts[4];
                 string muzPackPreview = parts[5];
