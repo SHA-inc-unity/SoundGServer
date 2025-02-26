@@ -363,6 +363,7 @@ namespace shooter_server
                 // Проверяем, загружены ли все части
                 var uploadedParts = Directory.GetFiles(songDir, $"part_{songName}_{songAuthor}_*.bin").Length;
 
+                Console.WriteLine($"{uploadedParts}");
                 if (uploadedParts == totalParts) // Если загружены все части, собираем файл
                 {
                     string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.muzpack");
