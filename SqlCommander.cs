@@ -361,22 +361,23 @@ namespace shooter_server
                 await File.WriteAllBytesAsync(partFilePath, fileChunk);
 
                 // Проверяем, загружены ли все части
-                var uploadedParts = Directory.GetFiles(songDir, "part_*.bin").Length;
+                var uploadedParts = Directory.GetFiles(songDir, $"part_{songName}_{songAuthor}_*.bin").Length;
 
                 if (uploadedParts == totalParts) // Если загружены все части, собираем файл
                 {
-                    string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.zip");
+                    string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.muzpack");
 
                     using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
                     {
                         for (int i = 0; i < totalParts; i++)
                         {
-                            string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{partNumber}.bin");
+                            string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{i}.bin");
                             if (File.Exists(chunkPath))
                             {
                                 byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
                                 await finalFile.WriteAsync(chunk, 0, chunk.Length);
                                 File.Delete(chunkPath); // Удаляем часть после записи
+                                Console.WriteLine($"rmc{chunkPath}");
                             }
                             else
                             {
@@ -393,17 +394,17 @@ namespace shooter_server
                     using (var cursor = dbConnection.CreateCommand())
                     {
                         cursor.CommandText = @"
-        UPDATE songs 
-        SET linktosong = @linktosong 
-        WHERE songname = @songname;";
+                            UPDATE songs 
+                            SET linktosong = @linktosong 
+                            WHERE songname = @songname;";
 
                         cursor.Parameters.AddWithValue("linktosong", finalFilePath);
-                        cursor.Parameters.AddWithValue("songname", $"song_{senderId}");
+                        cursor.Parameters.AddWithValue("songname", $"{songName}");
 
                         await cursor.ExecuteNonQueryAsync();
                     }
 
-                    lobby.SendMessagePlayer($"true {partNumber}", ws, requestId);
+                    lobby.SendMessagePlayer($"true {songName}", ws, requestId);
                 }
                 else
                 {
