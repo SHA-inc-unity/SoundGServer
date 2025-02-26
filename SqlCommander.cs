@@ -336,23 +336,25 @@ namespace shooter_server
         {
             try
             {
-                byte[] binaryData = Encoding.UTF8.GetBytes(sqlCommand);
                 List<string> parts = new List<string>(sqlCommand.Split(' '));
                 parts.RemoveAt(0); // Убираем "UploadSongPart"
 
                 int requestId = int.Parse(parts[0]); // ID запроса
                 int partNumber = int.Parse(parts[1]); // Номер части
                 int totalParts = int.Parse(parts[2]); // Всего частей
-                string encodedData = parts[3]; // Закодированные данные файла (base64 или hex)
+                string encodedData = parts[3]; // Закодированные данные (base64 или hex)
 
                 // Декодируем данные
-                byte[] fileChunk = Convert.FromBase64String(encodedData); // Используйте Convert.FromHexString(), если hex
+                byte[] fileChunk = Convert.FromBase64String(encodedData); // Если hex: Convert.FromHexString(encodedData)
 
                 string songname = $"song_{senderId}"; // Уникальное имя файла
                 string tempFilePath = $"uploads/{songname}.part";
 
-                // Записываем часть в файл
-                await File.AppendAllBytesAsync(tempFilePath, fileChunk);
+                // Открываем поток и дописываем данные в конец
+                using (FileStream fs = new FileStream(tempFilePath, FileMode.Append, FileAccess.Write, FileShare.None))
+                {
+                    await fs.WriteAsync(fileChunk, 0, fileChunk.Length);
+                }
 
                 if (partNumber == totalParts - 1) // Если это последняя часть
                 {
@@ -390,6 +392,7 @@ namespace shooter_server
                 Console.WriteLine($"Error in UploadSongPart command: {e}");
             }
         }
+
 
 
 
