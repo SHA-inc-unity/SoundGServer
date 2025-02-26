@@ -279,8 +279,9 @@ namespace shooter_server
                 int requestId = int.Parse(parts[0]);
                 string username = parts[1];
                 string hashedPassword = parts[2];
-                string songname = parts[3];
-                string muzPackPreview = string.Join(" ", parts.Skip(4));
+                int partsCount = int.Parse(parts[3]);
+                string songname = parts[4];
+                string muzPackPreview = parts[5];
 
                 using (var cursor = dbConnection.CreateCommand())
                 {

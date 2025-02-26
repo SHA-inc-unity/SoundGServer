@@ -38,3 +38,6 @@ obj/Debug/net8.0/shooter_server.GeneratedMSBuildEditorConfig.editorconfig
 .vs/Televibe_server/v17/Browse.VC.opendb
 .vs/slnx.sqlite
 /.vs
+obj/Debug/net8.0/televibe_server.GeneratedMSBuildEditorConfig.editorconfig
+obj/Debug/net8.0/televibe_server.AssemblyInfo.cs
+obj/televibe_server.csproj.nuget.g.targets
