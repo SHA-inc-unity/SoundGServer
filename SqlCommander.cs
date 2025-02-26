@@ -311,7 +311,7 @@ namespace shooter_server
 
                     cursor.Parameters.AddWithValue("songname", songname);
                     cursor.Parameters.AddWithValue("linktosong", filePath);
-                    cursor.Parameters.AddWithValue("preview", Convert.FromBase64String(muzPackPreview));
+                    cursor.Parameters.AddWithValue("preview", muzPackPreview);
 
                     await cursor.ExecuteNonQueryAsync();
 
