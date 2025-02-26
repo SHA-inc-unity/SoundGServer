@@ -349,24 +349,42 @@ namespace shooter_server
                 // Декодируем данные
                 byte[] fileChunk = Convert.FromBase64String(encodedData); // Если hex: Convert.FromHexString(encodedData)
 
-                string songname = $"song_{senderId}"; // Уникальное имя файла
-                string tempFilePath = $"uploads/{songname}.part";
+                string songDir = $"uploads/song_{senderId}";
+                Directory.CreateDirectory(songDir); // Создаём папку, если её нет
 
-                // Открываем поток и дописываем данные в конец
-                using (FileStream fs = new FileStream(tempFilePath, FileMode.Append, FileAccess.Write, FileShare.None))
+                string partFilePath = Path.Combine(songDir, $"part_{partNumber}.bin");
+
+                // Записываем часть файла
+                await File.WriteAllBytesAsync(partFilePath, fileChunk);
+
+                // Проверяем, загружены ли все части
+                var uploadedParts = Directory.GetFiles(songDir, "part_*.bin").Length;
+
+                if (uploadedParts == totalParts) // Если загружены все части, собираем файл
                 {
-                    await fs.WriteAsync(fileChunk, 0, fileChunk.Length);
-                }
+                    string finalFilePath = $"uploads/song_{senderId}.zip";
 
-                if (partNumber == totalParts - 1) // Если это последняя часть
-                {
-                    string finalFilePath = $"uploads/{songname}.zip";
-
-                    if (File.Exists(finalFilePath))
+                    using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
                     {
-                        File.Delete(finalFilePath);
+                        for (int i = 0; i < totalParts; i++)
+                        {
+                            string chunkPath = Path.Combine(songDir, $"part_{i}.bin");
+                            if (File.Exists(chunkPath))
+                            {
+                                byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
+                                await finalFile.WriteAsync(chunk, 0, chunk.Length);
+                                File.Delete(chunkPath); // Удаляем часть после записи
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Missing chunk: {chunkPath}");
+                                return;
+                            }
+                        }
                     }
-                    File.Move(tempFilePath, finalFilePath);
+
+                    // Удаляем временную папку
+                    Directory.Delete(songDir);
 
                     // Обновляем путь в БД
                     using (var cursor = dbConnection.CreateCommand())
@@ -377,7 +395,7 @@ namespace shooter_server
                 WHERE songname = @songname;";
 
                         cursor.Parameters.AddWithValue("linktosong", finalFilePath);
-                        cursor.Parameters.AddWithValue("songname", songname);
+                        cursor.Parameters.AddWithValue("songname", $"song_{senderId}");
 
                         await cursor.ExecuteNonQueryAsync();
                     }
@@ -394,7 +412,6 @@ namespace shooter_server
                 Console.WriteLine($"Error in UploadSongPart command: {e}");
             }
         }
-
 
 
 
