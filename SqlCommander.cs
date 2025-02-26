@@ -249,7 +249,7 @@ namespace shooter_server
                             int price = topSongReader.GetInt32(1);
                             int buyCount = topSongReader.GetInt32(2);
                             string ownType = topSongReader.GetString(3); // buyed, owner, или load
-                            topSongs.Add($"{songName}_{price}_{buyCount}_{ownType}");
+                            topSongs.Add($"{songName}__{price}__{buyCount}__{ownType}");
                         }
                     }
                 }
