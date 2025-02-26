@@ -371,7 +371,7 @@ namespace shooter_server
                     {
                         for (int i = 0; i < totalParts; i++)
                         {
-                            string chunkPath = Path.Combine(songDir, $"part_{i}.bin");
+                            string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{partNumber}.bin");
                             if (File.Exists(chunkPath))
                             {
                                 byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
