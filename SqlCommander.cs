@@ -360,11 +360,7 @@ namespace shooter_server
                 // Записываем часть файла
                 await File.WriteAllBytesAsync(partFilePath, fileChunk);
 
-                // Проверяем, загружены ли все части
-                var uploadedParts = Directory.GetFiles(songDir, $"part_{songName}_{songAuthor}_*.bin").Length;
-
-                Console.WriteLine($"{uploadedParts}");
-                if (uploadedParts == totalParts) // Если загружены все части, собираем файл
+                if (partNumber == totalParts - 1) // Если загружены все части, собираем файл
                 {
                     string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.muzpack");
 
