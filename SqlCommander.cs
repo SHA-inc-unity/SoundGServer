@@ -377,7 +377,7 @@ namespace shooter_server
                                 byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
                                 await finalFile.WriteAsync(chunk, 0, chunk.Length);
                                 File.Delete(chunkPath); // Удаляем часть после записи
-                                Console.WriteLine($"rmc{chunkPath}");
+                                Console.WriteLine($"rmc              {chunkPath}");
                             }
                             else
                             {
