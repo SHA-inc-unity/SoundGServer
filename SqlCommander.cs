@@ -73,6 +73,15 @@ namespace shooter_server
                             //OK
                             await Task.Run(() => GetTopSongs(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("SaveSong"):
+                            //
+                            await Task.Run(() => SaveSong(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
+                        case string s when s.StartsWith("UploadSongPart"):
+                            //
+                            byte[] binaryData = Encoding.UTF8.GetBytes(sqlCommand);
+                            await Task.Run(() => UploadSongPart(binaryData, senderId, lobby, webSocket));
+                            break;
                         default:
                             Console.WriteLine("Command not found");
                             break;
@@ -256,6 +265,128 @@ namespace shooter_server
             }
         }
 
+
+
+
+
+        private async Task SaveSong(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                // Разбираем команду
+                List<string> parts = new List<string>(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "SaveSong"
+
+                int requestId = int.Parse(parts[0]);
+                string username = parts[1];
+                string hashedPassword = parts[2];
+                int totalParts = int.Parse(parts[3]);
+                string muzPackPreview = string.Join(" ", parts.Skip(4));
+
+                using (var cursor = dbConnection.CreateCommand())
+                {
+                    cursor.CommandText = @"
+            SELECT UserId FROM UserTable 
+            WHERE UserName = @username AND Password = @password";
+
+                    cursor.Parameters.AddWithValue("username", username);
+                    cursor.Parameters.AddWithValue("password", hashedPassword);
+
+                    int? userId = null;
+                    using (var reader = await cursor.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            userId = reader.GetInt32(0);
+                        }
+                    }
+
+                    if (userId == null)
+                    {
+                        lobby.SendMessagePlayer("false Invalid credentials", ws, requestId);
+                        return;
+                    }
+
+                    cursor.CommandText = @"
+            INSERT INTO SongTable (UserId, MuzPackPreview, TotalParts, UploadedParts) 
+            VALUES (@userId, @muzPackPreview, @totalParts, 0)
+            RETURNING SongId;";
+
+                    cursor.Parameters.AddWithValue("userId", userId);
+                    cursor.Parameters.AddWithValue("muzPackPreview", muzPackPreview);
+                    cursor.Parameters.AddWithValue("totalParts", totalParts);
+
+                    int songId = (int)await cursor.ExecuteScalarAsync();
+                    lobby.SendMessagePlayer($"true {songId}", ws, requestId);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error in SaveSong command: {e}");
+            }
+        }
+
+        private async Task UploadSongPart(string sqlCommand, byte[] data, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                using (var cursor = dbConnection.CreateCommand())
+                {
+                    int requestId = BitConverter.ToInt32(data, 0);
+                    int songId = BitConverter.ToInt32(data, 4);
+                    int partNumber = BitConverter.ToInt32(data, 8);
+                    int totalParts = BitConverter.ToInt32(data, 12);
+                    byte[] fileChunk = new byte[data.Length - 16];
+                    Buffer.BlockCopy(data, 16, fileChunk, 0, fileChunk.Length);
+
+                    // Проверяем существование песни
+                    cursor.CommandText = @"
+            SELECT UploadedParts, TotalParts FROM SongTable 
+            WHERE SongId = @songId";
+                    cursor.Parameters.AddWithValue("songId", songId);
+
+                    int uploadedParts = 0;
+                    int storedTotalParts = 0;
+                    using (var reader = await cursor.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            uploadedParts = reader.GetInt32(0);
+                            storedTotalParts = reader.GetInt32(1);
+                        }
+                        else
+                        {
+                            lobby.SendMessagePlayer("false Invalid song ID", ws, requestId);
+                            return;
+                        }
+                    }
+
+                    if (totalParts != storedTotalParts)
+                    {
+                        lobby.SendMessagePlayer("false Part count mismatch", ws, requestId);
+                        return;
+                    }
+
+                    // Сохраняем часть файла
+                    string filePath = Path.Combine("uploads", $"{songId}_{partNumber}.part");
+                    await File.WriteAllBytesAsync(filePath, fileChunk);
+
+                    // Обновляем количество загруженных частей
+                    cursor.CommandText = @"
+            UPDATE SongTable 
+            SET UploadedParts = UploadedParts + 1 
+            WHERE SongId = @songId";
+                    cursor.Parameters.AddWithValue("songId", songId);
+                    await cursor.ExecuteNonQueryAsync();
+
+                    lobby.SendMessagePlayer($"true {partNumber}", ws, requestId);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error in UploadSongPart command: {e}");
+            }
+        }
 
     }
 }
