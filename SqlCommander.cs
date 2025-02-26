@@ -342,18 +342,20 @@ namespace shooter_server
                 parts.RemoveAt(0); // Убираем "UploadSongPart"
 
                 int requestId = int.Parse(parts[0]); // ID запроса
-                int partNumber = int.Parse(parts[1]); // Номер части
-                int totalParts = int.Parse(parts[2]); // Всего частей
-                string encodedData = parts[3]; // Закодированные данные (base64 или hex)
+                string songName = parts[1];
+                string songAuthor = parts[2];
+                int partNumber = int.Parse(parts[3]); // Номер части
+                int totalParts = int.Parse(parts[4]); // Всего частей
+                string encodedData = parts[5]; // Закодированные данные (base64 или hex)
 
                 // Декодируем данные
                 byte[] fileChunk = Convert.FromBase64String(encodedData); // Если hex: Convert.FromHexString(encodedData)
 
                 string basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../uploads"));
-                string songDir = Path.Combine(basePath, $"song_{senderId}");
+                string songDir = Path.Combine(basePath, $"song_{songName}_{songAuthor}");
                 Directory.CreateDirectory(songDir); // Создаём папку, если её нет
 
-                string partFilePath = Path.Combine(songDir, $"part_{partNumber}.bin");
+                string partFilePath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{partNumber}.bin");
 
                 // Записываем часть файла
                 await File.WriteAllBytesAsync(partFilePath, fileChunk);
@@ -363,7 +365,7 @@ namespace shooter_server
 
                 if (uploadedParts == totalParts) // Если загружены все части, собираем файл
                 {
-                    string finalFilePath = Path.Combine(basePath, $"song_{senderId}.zip");
+                    string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.zip");
 
                     using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
                     {
