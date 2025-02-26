@@ -349,7 +349,8 @@ namespace shooter_server
                 // Декодируем данные
                 byte[] fileChunk = Convert.FromBase64String(encodedData); // Если hex: Convert.FromHexString(encodedData)
 
-                string songDir = $"uploads/song_{senderId}";
+                string basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../uploads"));
+                string songDir = Path.Combine(basePath, $"song_{senderId}");
                 Directory.CreateDirectory(songDir); // Создаём папку, если её нет
 
                 string partFilePath = Path.Combine(songDir, $"part_{partNumber}.bin");
@@ -362,7 +363,7 @@ namespace shooter_server
 
                 if (uploadedParts == totalParts) // Если загружены все части, собираем файл
                 {
-                    string finalFilePath = $"uploads/song_{senderId}.zip";
+                    string finalFilePath = Path.Combine(basePath, $"song_{senderId}.zip");
 
                     using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
                     {
@@ -390,9 +391,9 @@ namespace shooter_server
                     using (var cursor = dbConnection.CreateCommand())
                     {
                         cursor.CommandText = @"
-                UPDATE songs 
-                SET linktosong = @linktosong 
-                WHERE songname = @songname;";
+        UPDATE songs 
+        SET linktosong = @linktosong 
+        WHERE songname = @songname;";
 
                         cursor.Parameters.AddWithValue("linktosong", finalFilePath);
                         cursor.Parameters.AddWithValue("songname", $"song_{senderId}");
@@ -412,6 +413,7 @@ namespace shooter_server
                 Console.WriteLine($"Error in UploadSongPart command: {e}");
             }
         }
+
 
 
 
