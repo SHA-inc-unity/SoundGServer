@@ -80,7 +80,7 @@ namespace shooter_server
                         case string s when s.StartsWith("UploadSongPart"):
                             //
                             byte[] binaryData = Encoding.UTF8.GetBytes(sqlCommand);
-                            await Task.Run(() => UploadSongPart(binaryData, senderId, lobby, webSocket));
+                            await Task.Run(() => UploadSongPart(binaryData, senderId, dbConnection, lobby, webSocket));
                             break;
                         default:
                             Console.WriteLine("Command not found");
