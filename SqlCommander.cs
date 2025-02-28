@@ -362,6 +362,8 @@ namespace shooter_server
 
                 if (partNumber == totalParts - 1) // Если загружены все части, собираем файл
                 {
+                    await Task.Delay(2000); // 2000 миллисекунд = 2 секунды
+
                     string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.muzpack");
 
                     using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
