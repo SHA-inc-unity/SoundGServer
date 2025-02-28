@@ -362,46 +362,7 @@ namespace shooter_server
 
                 if (partNumber == totalParts - 1) // Если загружены все части, собираем файл
                 {
-                    await Task.Delay(20000); // 2000 миллисекунд = 2 секунды
-
-                    string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.muzpack");
-
-                    using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
-                    {
-                        for (int i = 0; i < totalParts; i++)
-                        {
-                            string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{i}.bin");
-                            if (File.Exists(chunkPath))
-                            {
-                                byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
-                                await finalFile.WriteAsync(chunk, 0, chunk.Length);
-                                File.Delete(chunkPath); // Удаляем часть после записи
-                                Console.WriteLine($"rmc              {chunkPath}");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Missing chunk: {chunkPath}");
-                                return;
-                            }
-                        }
-                    }
-
-                    // Удаляем временную папку
-                    Directory.Delete(songDir);
-
-                    // Обновляем путь в БД
-                    using (var cursor = dbConnection.CreateCommand())
-                    {
-                        cursor.CommandText = @"
-                            UPDATE songs 
-                            SET linktosong = @linktosong 
-                            WHERE songname = @songname;";
-
-                        cursor.Parameters.AddWithValue("linktosong", finalFilePath);
-                        cursor.Parameters.AddWithValue("songname", $"{songName}");
-
-                        await cursor.ExecuteNonQueryAsync();
-                    }
+                    UploadSongg();
 
                     lobby.SendMessagePlayer($"true {songName}", ws, requestId);
                 }
@@ -413,6 +374,50 @@ namespace shooter_server
             catch (Exception e)
             {
                 Console.WriteLine($"Error in UploadSongPart command: {e}");
+            }
+        }
+
+        private async Task UploadSongg()
+        {
+            await Task.Delay(5000); // 2000 миллисекунд = 2 секунды
+
+            string finalFilePath = Path.Combine(basePath, $"song_{songName}_{songAuthor}.muzpack");
+
+            using (FileStream finalFile = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write))
+            {
+                for (int i = 0; i < totalParts; i++)
+                {
+                    string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{i}.bin");
+                    if (File.Exists(chunkPath))
+                    {
+                        byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
+                        await finalFile.WriteAsync(chunk, 0, chunk.Length);
+                        File.Delete(chunkPath); // Удаляем часть после записи
+                        Console.WriteLine($"rmc              {chunkPath}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Missing chunk: {chunkPath}");
+                        return;
+                    }
+                }
+            }
+
+            // Удаляем временную папку
+            Directory.Delete(songDir);
+
+            // Обновляем путь в БД
+            using (var cursor = dbConnection.CreateCommand())
+            {
+                cursor.CommandText = @"
+                            UPDATE songs 
+                            SET linktosong = @linktosong 
+                            WHERE songname = @songname;";
+
+                cursor.Parameters.AddWithValue("linktosong", finalFilePath);
+                cursor.Parameters.AddWithValue("songname", $"{songName}");
+
+                await cursor.ExecuteNonQueryAsync();
             }
         }
 
