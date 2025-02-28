@@ -362,7 +362,7 @@ namespace shooter_server
 
                 if (partNumber == totalParts - 1) // Если загружены все части, собираем файл
                 {
-                    UploadSongg();
+                    UploadSongg(songName, songAuthor, totalParts, basePath, songDir, dbConnection);
 
                     lobby.SendMessagePlayer($"true {songName}", ws, requestId);
                 }
@@ -377,7 +377,7 @@ namespace shooter_server
             }
         }
 
-        private async Task UploadSongg()
+        private async Task UploadSongg(string songName, string songAuthor, int totalParts, string basePath, string songDir, NpgsqlConnection dbConnection)
         {
             await Task.Delay(5000); // 2000 миллисекунд = 2 секунды
 
