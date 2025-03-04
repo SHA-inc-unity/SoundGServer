@@ -102,9 +102,9 @@ namespace shooter_server
             }
         }
 
-        private static async void WebSocketServerExample.PrintLimited(string message)
+        public static async void PrintLimited(string message)
         {
-            WebSocketServerExample.PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
+            Console.WriteLine(message.Length > 100 ? message.Substring(0, 100) : message);
         }
     }
 }
