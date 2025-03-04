@@ -48,7 +48,7 @@ namespace shooter_server
         // Отправка клиенту, чей вебсокет был введен
         public async void SendMessagePlayer(string message, WebSocket ws, int idRequest)
         {
-            Console.WriteLine(message);
+            PrintLimited(message);
             await Players[ws].SendMessageAsync(ws, idRequest.ToString() + " " + message);
         }
 
@@ -66,6 +66,11 @@ namespace shooter_server
         {
             if (Players.ContainsKey(ws))
                 Players.Remove(ws);
+        }
+
+        void PrintLimited(string message)
+        {
+            PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
         }
     }
 }

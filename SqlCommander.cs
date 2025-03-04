@@ -43,18 +43,18 @@ namespace shooter_server
             using (var dbConnection = new NpgsqlConnection($"Host={host};Username={user};Password={password};Database={database};Port={port}"))
             {
                 await dbConnection.OpenAsync();
-                //Console.WriteLine(dbConnection.ConnectionString);
+                //PrintLimited(dbConnection.ConnectionString);
 
                 int senderId = player.Id;
 
                 if (dbConnection.State != ConnectionState.Open)
                 {
-                    Console.WriteLine("DB connection error");
+                    PrintLimited("DB connection error");
 
                     return;
                 }
 
-                //Console.WriteLine(sqlCommand);
+                //PrintLimited(sqlCommand);
 
                 try
                 {
@@ -82,13 +82,13 @@ namespace shooter_server
                             await Task.Run(() => UploadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
                         default:
-                            Console.WriteLine("Command not found");
+                            PrintLimited("Command not found");
                             break;
                     }
                 }
                 catch (Exception e)
                 {
-                    //Console.WriteLine($"Error executing SQL command: {e}");
+                    //PrintLimited($"Error executing SQL command: {e}");
                 }
             }
         }
@@ -140,7 +140,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error in Login command: {e}");
+                PrintLimited($"Error in Login command: {e}");
             }
         }
 
@@ -185,7 +185,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error in Register command: {e}");
+                PrintLimited($"Error in Register command: {e}");
             }
         }
 
@@ -260,7 +260,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error in GetTopSongs command: {e}");
+                PrintLimited($"Error in GetTopSongs command: {e}");
             }
         }
 
@@ -279,7 +279,7 @@ namespace shooter_server
                 int requestId = int.Parse(parts[0]);
                 string username = parts[1];
                 string hashedPassword = parts[2];
-                Console.WriteLine(parts[3]);
+                PrintLimited(parts[3]);
                 int partsCount = int.Parse(parts[3]);
                 string songname = parts[4];
                 string muzPackPreview = parts[5];
@@ -330,7 +330,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error in SaveSong command: {e}");
+                PrintLimited($"Error in SaveSong command: {e}");
             }
         }
 
@@ -373,7 +373,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error in UploadSongPart command: {e}");
+                PrintLimited($"Error in UploadSongPart command: {e}");
             }
         }
 
@@ -407,11 +407,11 @@ namespace shooter_server
                         byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
                         await finalFile.WriteAsync(chunk, 0, chunk.Length);
                         File.Delete(chunkPath); // Удаляем часть после записи
-                        Console.WriteLine($"rmc              {chunkPath}");
+                        PrintLimited($"rmc              {chunkPath}");
                     }
                     else
                     {
-                        Console.WriteLine($"Missing chunk: {chunkPath}");
+                        PrintLimited($"Missing chunk: {chunkPath}");
                         return;
                     }
                 }
@@ -436,7 +436,10 @@ namespace shooter_server
         }
 
 
-
+        void PrintLimited(string message)
+        {
+            PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
+        }
 
     }
 }
