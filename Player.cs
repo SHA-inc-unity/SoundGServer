@@ -5,7 +5,6 @@ using System.Net.WebSockets;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using WebSocketServerExample;
 
 namespace shooter_server
 {
