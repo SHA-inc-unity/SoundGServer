@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using WebSocketServerExample;
 
 namespace shooter_server
 {
@@ -66,11 +67,6 @@ namespace shooter_server
         {
             if (Players.ContainsKey(ws))
                 Players.Remove(ws);
-        }
-
-        void PrintLimited(string message)
-        {
-            PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
         }
     }
 }

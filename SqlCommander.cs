@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text.Json;
+using WebSocketServerExample;
 
 
 namespace shooter_server
@@ -433,12 +434,6 @@ namespace shooter_server
 
                 await cursor.ExecuteNonQueryAsync();
             }
-        }
-
-
-        void PrintLimited(string message)
-        {
-            PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
         }
 
     }

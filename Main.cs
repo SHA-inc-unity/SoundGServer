@@ -102,7 +102,7 @@ namespace shooter_server
             }
         }
 
-        void PrintLimited(string message)
+        private static async void PrintLimited(string message)
         {
             PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
         }
