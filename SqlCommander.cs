@@ -360,7 +360,7 @@ namespace shooter_server
                 // Записываем часть файла
                 await File.WriteAllBytesAsync(partFilePath, fileChunk);
 
-                Player? foundPlayer = lobby.FindPlayerById(42);
+                Player? foundPlayer = lobby.FindPlayerById(senderId);
                 if (foundPlayer != null)
                 {
                     Console.WriteLine($"Игрок найден! ID: {foundPlayer.Id}");
