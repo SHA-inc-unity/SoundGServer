@@ -379,7 +379,7 @@ namespace shooter_server
 
         private bool CheckAllParts(int totalParts, string songDir, string songName, string songAuthor)
         {
-            x = 0;
+            int x = 0;
             for (int i = 0; i < totalParts; i++)
             {
                 string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{i}.bin");
