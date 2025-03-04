@@ -360,10 +360,19 @@ namespace shooter_server
                 // Записываем часть файла
                 await File.WriteAllBytesAsync(partFilePath, fileChunk);
 
-                if (CheckAllParts(totalParts, songDir, songName, songAuthor)) // Если загружены все части, собираем файл
+                if (!lobby.Players[senderId].loadedParts.ContainsKey($"{songName}_{songAuthor}"))
+                {
+                    lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"] = (1, totalParts);
+                }
+                else
+                {
+                    var (current, total) = lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"];
+                    lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"] = (current + 1, total);
+                }
+
+                if (lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"].Item1 == totalParts) // Если загружены все части, собираем файл
                 {
                     UploadSongg(songName, songAuthor, totalParts, basePath, songDir, dbConnection);
-
                     lobby.SendMessagePlayer($"true {songName}", ws, requestId);
                 }
                 else

@@ -11,6 +11,7 @@ namespace shooter_server
     public class Player
     {
         public int Id { get; set; }
+        public Dictionary<string, (int, int)> loadedParts = new Dictionary<string, (int, int)>();
 
         // Конструктор для инициализации объекта Player
         public Player(int id)
