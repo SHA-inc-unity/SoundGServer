@@ -360,17 +360,27 @@ namespace shooter_server
                 // Записываем часть файла
                 await File.WriteAllBytesAsync(partFilePath, fileChunk);
 
-                if (!lobby.Players[senderId].loadedParts.ContainsKey($"{songName}_{songAuthor}"))
+                Player? foundPlayer = lobby.FindPlayerById(42);
+                if (foundPlayer != null)
                 {
-                    lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"] = (1, totalParts);
+                    Console.WriteLine($"Игрок найден! ID: {foundPlayer.Id}");
                 }
                 else
                 {
-                    var (current, total) = lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"];
-                    lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"] = (current + 1, total);
+                    Console.WriteLine("Игрок не найден.");
                 }
 
-                if (lobby.Players[senderId].loadedParts[$"{songName}_{songAuthor}"].Item1 == totalParts) // Если загружены все части, собираем файл
+                if (!foundPlayer.loadedParts.ContainsKey($"{songName}_{songAuthor}"))
+                {
+                    foundPlayer.loadedParts[$"{songName}_{songAuthor}"] = (1, totalParts);
+                }
+                else
+                {
+                    var (current, total) = foundPlayer.loadedParts[$"{songName}_{songAuthor}"];
+                    foundPlayer.loadedParts[$"{songName}_{songAuthor}"] = (current + 1, total);
+                }
+
+                if (foundPlayer.loadedParts[$"{songName}_{songAuthor}"].Item1 == totalParts) // Если загружены все части, собираем файл
                 {
                     UploadSongg(songName, songAuthor, totalParts, basePath, songDir, dbConnection);
                     lobby.SendMessagePlayer($"true {songName}", ws, requestId);

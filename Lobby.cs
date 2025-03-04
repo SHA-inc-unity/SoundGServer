@@ -67,5 +67,12 @@ namespace shooter_server
             if (Players.ContainsKey(ws))
                 Players.Remove(ws);
         }
+
+
+        // 🔹 Поиск игрока по его ID
+        public Player? FindPlayerById(int id)
+        {
+            return Players.Values.FirstOrDefault(player => player.Id == id);
+        }
     }
 }
