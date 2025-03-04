@@ -43,18 +43,18 @@ namespace shooter_server
             using (var dbConnection = new NpgsqlConnection($"Host={host};Username={user};Password={password};Database={database};Port={port}"))
             {
                 await dbConnection.OpenAsync();
-                //PrintLimited(dbConnection.ConnectionString);
+                //WebSocketServerExample.PrintLimited(dbConnection.ConnectionString);
 
                 int senderId = player.Id;
 
                 if (dbConnection.State != ConnectionState.Open)
                 {
-                    PrintLimited("DB connection error");
+                    WebSocketServerExample.PrintLimited("DB connection error");
 
                     return;
                 }
 
-                //PrintLimited(sqlCommand);
+                //WebSocketServerExample.PrintLimited(sqlCommand);
 
                 try
                 {
@@ -82,13 +82,13 @@ namespace shooter_server
                             await Task.Run(() => UploadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
                         default:
-                            PrintLimited("Command not found");
+                            WebSocketServerExample.PrintLimited("Command not found");
                             break;
                     }
                 }
                 catch (Exception e)
                 {
-                    //PrintLimited($"Error executing SQL command: {e}");
+                    //WebSocketServerExample.PrintLimited($"Error executing SQL command: {e}");
                 }
             }
         }
@@ -140,7 +140,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                PrintLimited($"Error in Login command: {e}");
+                WebSocketServerExample.PrintLimited($"Error in Login command: {e}");
             }
         }
 
@@ -185,7 +185,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                PrintLimited($"Error in Register command: {e}");
+                WebSocketServerExample.PrintLimited($"Error in Register command: {e}");
             }
         }
 
@@ -260,7 +260,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                PrintLimited($"Error in GetTopSongs command: {e}");
+                WebSocketServerExample.PrintLimited($"Error in GetTopSongs command: {e}");
             }
         }
 
@@ -279,7 +279,7 @@ namespace shooter_server
                 int requestId = int.Parse(parts[0]);
                 string username = parts[1];
                 string hashedPassword = parts[2];
-                PrintLimited(parts[3]);
+                WebSocketServerExample.PrintLimited(parts[3]);
                 int partsCount = int.Parse(parts[3]);
                 string songname = parts[4];
                 string muzPackPreview = parts[5];
@@ -330,7 +330,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                PrintLimited($"Error in SaveSong command: {e}");
+                WebSocketServerExample.PrintLimited($"Error in SaveSong command: {e}");
             }
         }
 
@@ -373,7 +373,7 @@ namespace shooter_server
             }
             catch (Exception e)
             {
-                PrintLimited($"Error in UploadSongPart command: {e}");
+                WebSocketServerExample.PrintLimited($"Error in UploadSongPart command: {e}");
             }
         }
 
@@ -407,11 +407,11 @@ namespace shooter_server
                         byte[] chunk = await File.ReadAllBytesAsync(chunkPath);
                         await finalFile.WriteAsync(chunk, 0, chunk.Length);
                         File.Delete(chunkPath); // Удаляем часть после записи
-                        PrintLimited($"rmc              {chunkPath}");
+                        WebSocketServerExample.PrintLimited($"rmc              {chunkPath}");
                     }
                     else
                     {
-                        PrintLimited($"Missing chunk: {chunkPath}");
+                        WebSocketServerExample.PrintLimited($"Missing chunk: {chunkPath}");
                         return;
                     }
                 }

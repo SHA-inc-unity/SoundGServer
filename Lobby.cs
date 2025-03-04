@@ -48,7 +48,7 @@ namespace shooter_server
         // Отправка клиенту, чей вебсокет был введен
         public async void SendMessagePlayer(string message, WebSocket ws, int idRequest)
         {
-            PrintLimited(message);
+            WebSocketServerExample.PrintLimited(message);
             await Players[ws].SendMessageAsync(ws, idRequest.ToString() + " " + message);
         }
 

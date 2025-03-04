@@ -19,14 +19,14 @@ namespace shooter_server
 
         static async Task Main()
         {
-            PrintLimited("START");
+            WebSocketServerExample.PrintLimited("START");
             int port = 17925;
             HttpListener httpListener = new HttpListener();
             httpListener.Prefixes.Add($"http://+:{port}/");
             httpListener.Start();
 
-            PrintLimited($"WebSocket Server started on port {port}");
-            PrintLimited("Waiting for connections...");
+            WebSocketServerExample.PrintLimited($"WebSocket Server started on port {port}");
+            WebSocketServerExample.PrintLimited("Waiting for connections...");
 
             while (true)
             {
@@ -44,7 +44,7 @@ namespace shooter_server
                 var webSocketContext = await context.AcceptWebSocketAsync(null);
                 var webSocket = webSocketContext.WebSocket;
 
-                PrintLimited($"WebSocket connection established from: {context.Request.RemoteEndPoint}");
+                WebSocketServerExample.PrintLimited($"WebSocket connection established from: {context.Request.RemoteEndPoint}");
 
                 mainLobby.AddPlayer(webSocket, new Player());
 
@@ -60,7 +60,7 @@ namespace shooter_server
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        PrintLimited($"Received: {message}");
+                        WebSocketServerExample.PrintLimited($"Received: {message}");
 
                         if (message.StartsWith("/sql"))
                         {
@@ -76,11 +76,11 @@ namespace shooter_server
 
                 await NotifyClients($"{context.Request.RemoteEndPoint} has left. Reason: {result.CloseStatusDescription}");
 
-                PrintLimited($"WebSocket connection closed from: {context.Request.RemoteEndPoint}. Close status: {result.CloseStatus}, Reason: {result.CloseStatusDescription}");
+                WebSocketServerExample.PrintLimited($"WebSocket connection closed from: {context.Request.RemoteEndPoint}. Close status: {result.CloseStatus}, Reason: {result.CloseStatusDescription}");
             }
             catch (Exception e)
             {
-                PrintLimited($"An error occurred while reading from WebSocket: {e}");
+                WebSocketServerExample.PrintLimited($"An error occurred while reading from WebSocket: {e}");
             }
         }
 
@@ -97,14 +97,14 @@ namespace shooter_server
                 }
                 catch (Exception ex)
                 {
-                    PrintLimited($"Error sending message to client: {ex.Message}");
+                    WebSocketServerExample.PrintLimited($"Error sending message to client: {ex.Message}");
                 }
             }
         }
 
-        private static async void PrintLimited(string message)
+        private static async void WebSocketServerExample.PrintLimited(string message)
         {
-            PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
+            WebSocketServerExample.PrintLimited(message.Length > 100 ? message.Substring(0, 100) : message);
         }
     }
 }

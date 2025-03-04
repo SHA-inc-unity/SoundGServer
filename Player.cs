@@ -28,14 +28,14 @@ namespace shooter_server
         {
             try
             {
-                PrintLimited(message);
+                WebSocketServerExample.PrintLimited(message);
                 byte[] messageBytes = Encoding.UTF8.GetBytes(message);
                 ArraySegment<byte> segment = new ArraySegment<byte>(messageBytes, 0, messageBytes.Length);
                 await webSocket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
             }
             catch (Exception ex)
             {
-                PrintLimited($"Error sending message to client: {ex.Message}");
+                WebSocketServerExample.PrintLimited($"Error sending message to client: {ex.Message}");
             }
         }
     }
