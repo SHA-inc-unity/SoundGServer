@@ -397,20 +397,6 @@ namespace shooter_server
             }
         }
 
-        private bool CheckAllParts(int totalParts, string songDir, string songName, string songAuthor)
-        {
-            int x = 0;
-            for (int i = 0; i < totalParts; i++)
-            {
-                string chunkPath = Path.Combine(songDir, $"part_{songName}_{songAuthor}_{i}.bin");
-                if (File.Exists(chunkPath))
-                {
-                    x++;
-                }
-            }
-            return x == totalParts;
-        }
-
         private async Task UploadSongg(string songName, string songAuthor, int totalParts, string basePath, string songDir, NpgsqlConnection dbConnection)
         {
             await Task.Delay(5000); // 2000 миллисекунд = 2 секунды
