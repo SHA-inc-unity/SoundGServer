@@ -124,7 +124,7 @@ namespace shooter_server
                         if (reader.Read())
                         {
                             string userName = reader.GetString(0);
-                            string meatCoin = reader.GetString(1);
+                            int meatCoin = reader.GetInt32(1);
 
                             // Отправляем успешный логин
                             string result = $"true {userName} {meatCoin}";
