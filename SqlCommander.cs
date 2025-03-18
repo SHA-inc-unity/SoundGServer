@@ -110,7 +110,7 @@ namespace shooter_server
                 {
                     cursor.CommandText = @"
                 SELECT 
-                    UserName 
+                    UserName, meatCoin
                 FROM 
                     UserTable 
                 WHERE 
@@ -124,9 +124,10 @@ namespace shooter_server
                         if (reader.Read())
                         {
                             string userName = reader.GetString(0);
+                            string meatCoin = reader.GetString(1);
 
                             // Отправляем успешный логин
-                            string result = $"true {userName}";
+                            string result = $"true {userName} {meatCoin}";
                             lobby.SendMessagePlayer(result, ws, requestId);
                         }
                         else
