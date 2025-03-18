@@ -110,7 +110,7 @@ namespace shooter_server
                 {
                     cursor.CommandText = @"
                 SELECT 
-                    UserName, meatCoin
+                    UserName, MeatCoin
                 FROM 
                     UserTable 
                 WHERE 
