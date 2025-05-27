@@ -89,6 +89,10 @@ namespace shooter_server
                             //
                             await Task.Run(() => DownloadSong(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("GetPrize"):
+                            //
+                            await Task.Run(() => GetPrize(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
                         default:
                             WebSocketServerExample.PrintLimited("Command not found");
                             break;
@@ -404,6 +408,53 @@ namespace shooter_server
                 WebSocketServerExample.PrintLimited($"Error in UploadSongPart command: {e}");
             }
         }
+
+        private async Task GetPrize(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                List<string> parts = new List<string>(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "GetPrize"
+
+                int requestId = int.Parse(parts[0]);
+                string username = parts[1];
+                string songName = parts[2];
+                float scoreP = float.Parse(parts[3], CultureInfo.InvariantCulture);
+
+                int prize = scoreP switch
+                {
+                    < 0.7f => 1,
+                    < 0.9f => 3,
+                    _ => 5
+                };
+
+                int scorePercent = (int)(scoreP * 100);
+
+                using (var cmd = dbConnection.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        INSERT INTO UserToSong (username, songname, owntype, userscore)
+                        VALUES (@username, @songname, 'standart', @newScore)
+                        ON CONFLICT (username, songname)
+                        DO UPDATE SET userscore = GREATEST(UserToSong.userscore, @newScore);";
+
+                    cmd.Parameters.AddWithValue("username", username);
+                    cmd.Parameters.AddWithValue("songname", songName);
+                    cmd.Parameters.AddWithValue("newScore", scorePercent);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                lobby.SendMessagePlayer($"{prize}", ws, requestId);
+            }
+            catch (Exception e)
+            {
+                WebSocketServerExample.PrintLimited($"Error in GetPrize: {e}");
+                lobby.SendMessagePlayer("0", ws, 0);
+            }
+        }
+
+
 
         private async Task DownloadSong(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
         {
