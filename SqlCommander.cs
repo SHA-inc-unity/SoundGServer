@@ -87,6 +87,7 @@ namespace shooter_server
                             break;
                         case string s when s.StartsWith("DownloadSongPart"):
                             //
+                            WebSocketServerExample.PrintLimited("DownloadSongPart");
                             await Task.Run(() => DownloadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
 
@@ -97,7 +98,7 @@ namespace shooter_server
                 }
                 catch (Exception e)
                 {
-                    //WebSocketServerExample.PrintLimited($"Error executing SQL command: {e}");
+                    WebSocketServerExample.PrintLimited($"Error executing SQL command: {e}");
                 }
             }
         }
