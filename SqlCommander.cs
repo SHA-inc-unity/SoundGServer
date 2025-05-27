@@ -58,7 +58,6 @@ namespace shooter_server
 
                 try
                 {
-                    WebSocketServerExample.PrintLimited(sqlCommand);
                     // Определение типа SQL-команды
                     switch (sqlCommand)
                     {
@@ -484,6 +483,7 @@ namespace shooter_server
 
         private async Task DownloadSongPart(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
         {
+            WebSocketServerExample.PrintLimited("DSP -1");
             try
             {
                 List<string> parts = new List<string>(sqlCommand.Split(' '));
