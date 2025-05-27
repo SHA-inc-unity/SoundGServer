@@ -81,6 +81,9 @@ namespace shooter_server
                             //
                             await Task.Run(() => UploadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("DownloadSong"):
+                            await Task.Run(() => DownloadSong(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
                         default:
                             WebSocketServerExample.PrintLimited("Command not found");
                             break;
@@ -396,6 +399,82 @@ namespace shooter_server
                 WebSocketServerExample.PrintLimited($"Error in UploadSongPart command: {e}");
             }
         }
+
+        private async Task DownloadSong(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                List<string> parts = new List<string>(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "DownloadSong"
+
+                int requestId = int.Parse(parts[0]);
+                string username = parts[1];
+                string hashedPassword = parts[2];
+                string songName = parts[3];
+
+                // Проверяем логин
+                using (var authCmd = dbConnection.CreateCommand())
+                {
+                    authCmd.CommandText = @"
+                        SELECT 1 FROM UserTable 
+                        WHERE UserName = @username AND Password = @password";
+                    authCmd.Parameters.AddWithValue("username", username);
+                    authCmd.Parameters.AddWithValue("password", hashedPassword);
+
+                    using (var reader = await authCmd.ExecuteReaderAsync())
+                    {
+                        if (!reader.Read())
+                        {
+                            lobby.SendMessagePlayer("false Invalid credentials", ws, requestId);
+                            return;
+                        }
+                    }
+                }
+
+                // Проверяем право на загрузку
+                using (var checkCmd = dbConnection.CreateCommand())
+                {
+                    checkCmd.CommandText = @"
+                        SELECT s.linktosong FROM Songs s
+                        JOIN UserToSong u ON s.SongName = u.SongName
+                        WHERE u.UserName = @username AND u.SongName = @songname";
+                    checkCmd.Parameters.AddWithValue("username", username);
+                    checkCmd.Parameters.AddWithValue("songname", songName);
+
+                    string? filePath = null;
+                    using (var reader = await checkCmd.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            filePath = reader.GetString(0);
+                        }
+                        else
+                        {
+                            lobby.SendMessagePlayer("false Access denied", ws, requestId);
+                            return;
+                        }
+                    }
+
+                    if (!File.Exists(filePath))
+                    {
+                        lobby.SendMessagePlayer("false File not found", ws, requestId);
+                        return;
+                    }
+
+                    byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
+                    string base64Data = Convert.ToBase64String(fileBytes);
+
+                    // Отправка base64 строки клиенту
+                    string result = $"true {songName} {base64Data}";
+                    lobby.SendMessagePlayer(result, ws, requestId);
+                }
+            }
+            catch (Exception e)
+            {
+                WebSocketServerExample.PrintLimited($"Error in DownloadSong: {e}");
+            }
+        }
+
 
         private async Task UploadSongg(string songName, string songAuthor, int totalParts, string basePath, string songDir, NpgsqlConnection dbConnection)
         {

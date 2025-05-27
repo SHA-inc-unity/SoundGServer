@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("televibe_server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+551753d8443daacc1777a14aaca66b172427b0c2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a57c8aa10b06796ded7005897b7a2b099a6feeb4")]
 [assembly: System.Reflection.AssemblyProductAttribute("televibe_server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("televibe_server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
