@@ -58,6 +58,7 @@ namespace shooter_server
 
                 try
                 {
+                    WebSocketServerExample.PrintLimited(sqlCommand);
                     // Определение типа SQL-команды
                     switch (sqlCommand)
                     {
