@@ -488,6 +488,7 @@ namespace shooter_server
                 List<string> parts = new List<string>(sqlCommand.Split(' '));
                 parts.RemoveAt(0); // Убираем "DownloadSongPart"
 
+                Console.WriteLine("DSP 0");
                 int requestId = int.Parse(parts[0]);
                 string songName = parts[1];
                 string username = parts[2];
