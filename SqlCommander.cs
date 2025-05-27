@@ -498,6 +498,7 @@ namespace shooter_server
                 string? filePath = null;
                 using (var cmd = dbConnection.CreateCommand())
                 {
+                    Console.WriteLine("DSP 1");
                     cmd.CommandText = @"
                         SELECT s.linktosong FROM Songs s
                         JOIN UserToSong u ON s.SongName = u.SongName
@@ -517,6 +518,7 @@ namespace shooter_server
                             return;
                         }
                     }
+                    Console.WriteLine("DSP 2");
                 }
 
                 if (!File.Exists(filePath))
