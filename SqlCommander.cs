@@ -488,7 +488,7 @@ namespace shooter_server
                 List<string> parts = new List<string>(sqlCommand.Split(' '));
                 parts.RemoveAt(0); // Убираем "DownloadSongPart"
 
-                Console.WriteLine("DSP 0");
+                WebSocketServerExample.PrintLimited($"DSP 0");
                 int requestId = int.Parse(parts[0]);
                 string songName = parts[1];
                 string username = parts[2];
@@ -499,7 +499,7 @@ namespace shooter_server
                 string? filePath = null;
                 using (var cmd = dbConnection.CreateCommand())
                 {
-                    Console.WriteLine("DSP 1");
+                    WebSocketServerExample.PrintLimited($"DSP 1");
                     cmd.CommandText = @"
                         SELECT s.linktosong FROM Songs s
                         JOIN UserToSong u ON s.SongName = u.SongName
@@ -519,7 +519,7 @@ namespace shooter_server
                             return;
                         }
                     }
-                    Console.WriteLine("DSP 2");
+                    WebSocketServerExample.PrintLimited($"DSP 2");
                 }
 
                 if (!File.Exists(filePath))
