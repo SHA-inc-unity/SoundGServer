@@ -96,6 +96,10 @@ namespace shooter_server
                         case string s when s.StartsWith("GetMeatCoin"):
                             await Task.Run(() => GetMeatCoin(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("BuySong"):
+                            await Task.Run(() => BuySong(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
+
                         default:
                             WebSocketServerExample.PrintLimited("Command not found");
                             break;
@@ -202,6 +206,107 @@ namespace shooter_server
             catch (Exception e)
             {
                 WebSocketServerExample.PrintLimited($"Error in Register command: {e}");
+            }
+        }
+
+        private async Task BuySong(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                List<string> parts = new(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "BuySong"
+
+                int requestId = int.Parse(parts[0]);
+                string buyer = parts[1];
+                string songName = parts[2];
+
+                int price = 0;
+                string? owner = null;
+
+                // Получаем цену и владельца песни
+                using (var cmd = dbConnection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT price, owner FROM Songs WHERE SongName = @song";
+                    cmd.Parameters.AddWithValue("song", songName);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (!reader.Read())
+                        {
+                            lobby.SendMessagePlayer("false Song not found", ws, requestId);
+                            return;
+                        }
+
+                        price = reader.GetInt32(0);
+                        owner = reader.GetString(1);
+                    }
+                }
+
+                // Проверка баланса покупателя
+                int buyerCoins = 0;
+                using (var checkCmd = dbConnection.CreateCommand())
+                {
+                    checkCmd.CommandText = "SELECT MeatCoin FROM UserTable WHERE UserName = @buyer";
+                    checkCmd.Parameters.AddWithValue("buyer", buyer);
+                    object result = await checkCmd.ExecuteScalarAsync();
+
+                    if (result == null || (buyerCoins = Convert.ToInt32(result)) < price)
+                    {
+                        lobby.SendMessagePlayer("false Not enough coins", ws, requestId);
+                        return;
+                    }
+                }
+
+                // Начинаем транзакцию
+                using (var tx = dbConnection.BeginTransaction())
+                {
+                    // 1. Списываем монеты с покупателя
+                    using (var cmd = dbConnection.CreateCommand())
+                    {
+                        cmd.CommandText = "UPDATE UserTable SET MeatCoin = MeatCoin - @price WHERE UserName = @buyer";
+                        cmd.Parameters.AddWithValue("price", price);
+                        cmd.Parameters.AddWithValue("buyer", buyer);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    // 2. Начисляем монеты владельцу
+                    using (var cmd = dbConnection.CreateCommand())
+                    {
+                        cmd.CommandText = "UPDATE UserTable SET MeatCoin = MeatCoin + @price WHERE UserName = @owner";
+                        cmd.Parameters.AddWithValue("price", price);
+                        cmd.Parameters.AddWithValue("owner", owner);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    // 3. Увеличиваем buycount
+                    using (var cmd = dbConnection.CreateCommand())
+                    {
+                        cmd.CommandText = "UPDATE Songs SET buycount = buycount + 1 WHERE SongName = @song";
+                        cmd.Parameters.AddWithValue("song", songName);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    // 4. Добавляем запись в UserToSong
+                    using (var cmd = dbConnection.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                            INSERT INTO UserToSong (username, songname, owntype, userscore)
+                            VALUES (@buyer, @song, 'buyed', 0)
+                            ON CONFLICT (username, songname) DO NOTHING";
+                        cmd.Parameters.AddWithValue("buyer", buyer);
+                        cmd.Parameters.AddWithValue("song", songName);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    await tx.CommitAsync();
+                }
+
+                lobby.SendMessagePlayer("true", ws, requestId);
+            }
+            catch (Exception e)
+            {
+                WebSocketServerExample.PrintLimited($"Error in BuySong: {e}");
+                lobby.SendMessagePlayer("false Error", ws, 0);
             }
         }
 
