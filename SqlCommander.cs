@@ -54,7 +54,7 @@ namespace shooter_server
                     return;
                 }
 
-                //WebSocketServerExample.PrintLimited(sqlCommand);
+                WebSocketServerExample.PrintLimited(sqlCommand);
 
                 try
                 {
