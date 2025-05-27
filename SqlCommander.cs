@@ -81,16 +81,14 @@ namespace shooter_server
                             //
                             await Task.Run(() => UploadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("DownloadSongPart"):
+                            //
+                            await Task.Run(() => DownloadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
                         case string s when s.StartsWith("DownloadSong"):
                             //
                             await Task.Run(() => DownloadSong(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
-                        case string s when s.StartsWith("DownloadSongPart"):
-                            //
-                            WebSocketServerExample.PrintLimited("DownloadSongPart");
-                            await Task.Run(() => DownloadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
-                            break;
-
                         default:
                             WebSocketServerExample.PrintLimited("Command not found");
                             break;
