@@ -482,13 +482,11 @@ namespace shooter_server
 
         private async Task DownloadSongPart(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
         {
-            WebSocketServerExample.PrintLimited("DSP -1");
             try
             {
                 List<string> parts = new List<string>(sqlCommand.Split(' '));
                 parts.RemoveAt(0); // Убираем "DownloadSongPart"
 
-                WebSocketServerExample.PrintLimited($"DSP 0");
                 int requestId = int.Parse(parts[0]);
                 string songName = parts[1];
                 string username = parts[2];
@@ -499,7 +497,6 @@ namespace shooter_server
                 string? filePath = null;
                 using (var cmd = dbConnection.CreateCommand())
                 {
-                    WebSocketServerExample.PrintLimited($"DSP 1");
                     cmd.CommandText = @"
                         SELECT s.linktosong FROM Songs s
                         JOIN UserToSong u ON s.SongName = u.SongName
@@ -519,7 +516,6 @@ namespace shooter_server
                             return;
                         }
                     }
-                    WebSocketServerExample.PrintLimited($"DSP 2");
                 }
 
                 if (!File.Exists(filePath))
