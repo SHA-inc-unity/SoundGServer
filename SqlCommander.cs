@@ -82,8 +82,14 @@ namespace shooter_server
                             await Task.Run(() => UploadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
                         case string s when s.StartsWith("DownloadSong"):
+                            //
                             await Task.Run(() => DownloadSong(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("DownloadSongPart"):
+                            //
+                            await Task.Run(() => DownloadSongPart(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
+
                         default:
                             WebSocketServerExample.PrintLimited("Command not found");
                             break;
@@ -412,7 +418,7 @@ namespace shooter_server
                 string hashedPassword = parts[2];
                 string songName = parts[3];
 
-                // Проверяем логин
+                // Проверка логина
                 using (var authCmd = dbConnection.CreateCommand())
                 {
                     authCmd.CommandText = @"
@@ -431,7 +437,8 @@ namespace shooter_server
                     }
                 }
 
-                // Проверяем право на загрузку
+                // Проверка доступа к песне и получение пути
+                string? filePath = null;
                 using (var checkCmd = dbConnection.CreateCommand())
                 {
                     checkCmd.CommandText = @"
@@ -441,7 +448,6 @@ namespace shooter_server
                     checkCmd.Parameters.AddWithValue("username", username);
                     checkCmd.Parameters.AddWithValue("songname", songName);
 
-                    string? filePath = null;
                     using (var reader = await checkCmd.ExecuteReaderAsync())
                     {
                         if (reader.Read())
@@ -454,26 +460,89 @@ namespace shooter_server
                             return;
                         }
                     }
-
-                    if (!File.Exists(filePath))
-                    {
-                        lobby.SendMessagePlayer("false File not found", ws, requestId);
-                        return;
-                    }
-
-                    byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
-                    string base64Data = Convert.ToBase64String(fileBytes);
-
-                    // Отправка base64 строки клиенту
-                    string result = $"true {songName} {base64Data}";
-                    lobby.SendMessagePlayer(result, ws, requestId);
                 }
+
+                if (!File.Exists(filePath))
+                {
+                    lobby.SendMessagePlayer("false File not found", ws, requestId);
+                    return;
+                }
+
+                const int bufferSize = 64 * 1024; // 64 KB
+                long fileSize = new FileInfo(filePath).Length;
+                int totalParts = (int)Math.Ceiling((double)fileSize / bufferSize);
+
+                lobby.SendMessagePlayer($"true {totalParts}", ws, requestId);
             }
             catch (Exception e)
             {
                 WebSocketServerExample.PrintLimited($"Error in DownloadSong: {e}");
             }
         }
+
+
+        private async Task DownloadSongPart(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                List<string> parts = new List<string>(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "DownloadSongPart"
+
+                int requestId = int.Parse(parts[0]);
+                string songName = parts[1];
+                string username = parts[2];
+                int partNumber = int.Parse(parts[3]);
+                int totalParts = int.Parse(parts[4]);
+
+                // Получение пути к файлу
+                string? filePath = null;
+                using (var cmd = dbConnection.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT s.linktosong FROM Songs s
+                        JOIN UserToSong u ON s.SongName = u.SongName
+                        WHERE u.UserName = @username AND u.SongName = @songname";
+                    cmd.Parameters.AddWithValue("username", username);
+                    cmd.Parameters.AddWithValue("songname", songName);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            filePath = reader.GetString(0);
+                        }
+                        else
+                        {
+                            lobby.SendMessagePlayer("false Access denied", ws, requestId);
+                            return;
+                        }
+                    }
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    lobby.SendMessagePlayer("false File not found", ws, requestId);
+                    return;
+                }
+
+                const int bufferSize = 64 * 1024; // 64 KB
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    fs.Seek((long)partNumber * bufferSize, SeekOrigin.Begin);
+
+                    byte[] buffer = new byte[Math.Min(bufferSize, (int)(fs.Length - fs.Position))];
+                    int bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length);
+
+                    string chunkBase64 = Convert.ToBase64String(buffer, 0, bytesRead);
+                    lobby.SendMessagePlayer($"true {partNumber} {chunkBase64}", ws, requestId);
+                }
+            }
+            catch (Exception e)
+            {
+                WebSocketServerExample.PrintLimited($"Error in DownloadSongPart: {e}");
+            }
+        }
+
 
 
         private async Task UploadSongg(string songName, string songAuthor, int totalParts, string basePath, string songDir, NpgsqlConnection dbConnection)
