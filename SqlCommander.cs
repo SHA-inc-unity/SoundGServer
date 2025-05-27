@@ -430,6 +430,7 @@ namespace shooter_server
 
                 int scorePercent = (int)(scoreP * 100);
 
+                // Обновляем или вставляем результат для песни
                 using (var cmd = dbConnection.CreateCommand())
                 {
                     cmd.CommandText = @"
@@ -443,6 +444,20 @@ namespace shooter_server
                     cmd.Parameters.AddWithValue("newScore", scorePercent);
 
                     await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Повышаем MeatCoin
+                using (var updateCoin = dbConnection.CreateCommand())
+                {
+                    updateCoin.CommandText = @"
+                        UPDATE UserTable
+                        SET MeatCoin = MeatCoin + @prize
+                        WHERE UserName = @username";
+
+                    updateCoin.Parameters.AddWithValue("prize", prize);
+                    updateCoin.Parameters.AddWithValue("username", username);
+
+                    await updateCoin.ExecuteNonQueryAsync();
                 }
 
                 lobby.SendMessagePlayer($"{prize}", ws, requestId);
