@@ -93,6 +93,9 @@ namespace shooter_server
                             //
                             await Task.Run(() => GetPrize(sqlCommand, senderId, dbConnection, lobby, webSocket));
                             break;
+                        case string s when s.StartsWith("GetMeatCoin"):
+                            await Task.Run(() => GetMeatCoin(sqlCommand, senderId, dbConnection, lobby, webSocket));
+                            break;
                         default:
                             WebSocketServerExample.PrintLimited("Command not found");
                             break;
@@ -199,6 +202,39 @@ namespace shooter_server
             catch (Exception e)
             {
                 WebSocketServerExample.PrintLimited($"Error in Register command: {e}");
+            }
+        }
+
+        private async Task GetMeatCoin(string sqlCommand, int senderId, NpgsqlConnection dbConnection, Lobby lobby, WebSocket ws)
+        {
+            try
+            {
+                List<string> parts = new(sqlCommand.Split(' '));
+                parts.RemoveAt(0); // Убираем "GetMeatCoin"
+
+                int requestId = int.Parse(parts[0]);
+                string username = parts[1];
+
+                using (var cmd = dbConnection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT MeatCoin FROM UserTable WHERE UserName = @username";
+                    cmd.Parameters.AddWithValue("username", username);
+
+                    object result = await cmd.ExecuteScalarAsync();
+                    if (result != null)
+                    {
+                        lobby.SendMessagePlayer(result.ToString(), ws, requestId);
+                    }
+                    else
+                    {
+                        lobby.SendMessagePlayer("0", ws, requestId); // fallback
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                WebSocketServerExample.PrintLimited($"Error in GetMeatCoin: {e}");
+                lobby.SendMessagePlayer("0", ws, 0);
             }
         }
 
